@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include <errno.h>
 
+#ifdef __GNUC__
+#define fgetc getc_unlocked
+#define fputc putc_unlocked
+#define feof feof_unlocked
+#define ferror ferror_unlocked
+#endif
+
 int read_byte(const char *path, FILE *file) {
     int c = fgetc(file);
     if (c == EOF) {
