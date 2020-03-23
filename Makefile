@@ -1,9 +1,14 @@
+CFLAGS ?= -O3
+
 all: zrle zrld
 
 zrle zrld: zrl.c
-	cc -DZRLF=$@ $< -o $@
+	cc $(CFLAGS) -DZRLF=$@ $< -o $@
+
+test: zrle zrld
+	./test.sh
 
 clean:
 	rm -f zrle zrld
 
-.PHONY: all clean
+.PHONY: all test clean
