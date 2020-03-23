@@ -1,4 +1,4 @@
-CFLAGS ?= -O3
+CFLAGS ?= -std=c99 -O3
 
 all: zrle zrld
 
