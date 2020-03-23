@@ -4,6 +4,16 @@
 #include <stdio.h>
 #include <errno.h>
 
+#if _POSIX_C_SOURCE >= 1 || _XOPEN_SOURCE || _POSIX_SOURCE || _BSD_SOURCE || _SVID_SOURCE
+#define fgetc  getc_unlocked
+#define fputc  putc_unlocked
+#endif
+
+#if _BSD_SOURCE || _SVID_SOURCE
+#define feof   feof_unlocked
+#define ferror ferror_unlocked
+#endif
+
 int read_byte(const char *path, FILE *file) {
     int c = fgetc(file);
     if (c == EOF) {
