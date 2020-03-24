@@ -5,9 +5,9 @@
 #include <errno.h>
 
 #ifdef __GNUC__
-#define fgetc getc_unlocked
-#define fputc putc_unlocked
-#define feof feof_unlocked
+#define fgetc  getc_unlocked
+#define fputc  putc_unlocked
+#define feof   feof_unlocked
 #define ferror ferror_unlocked
 #endif
 
