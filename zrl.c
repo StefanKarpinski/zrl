@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <errno.h>
 
-#ifdef __GNUC__
-#define fgetc  getc_unlocked
-#define fputc  putc_unlocked
-#define feof   feof_unlocked
+#ifdef IO_UNLOCKED // UNIX systems
+#define fgetc getc_unlocked
+#define fputc putc_unlocked
+#define feof feof_unlocked
 #define ferror ferror_unlocked
+#elif IO_NOLOCK // Windows systems
+#define fgetc _getc_nolock
+#define fputc _putc_nolock
 #endif
 
 int read_byte(const char *path, FILE *file) {
