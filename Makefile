@@ -3,15 +3,17 @@ CFLAGS ?= -std=c99 -O3
 CPP_DEFINES ?= -DIO_UNLOCKED
 # set to -DIO_NOLOCK to avoid locking on Windows
 
-all: zrle zrld
+OUTPUTS = zrle zrld leb128e leb128d
 
-zrle zrld: zrl.c
+all: $(OUTPUTS)
+
+$(OUTPUTS): zrl.c
 	cc $(CFLAGS) -DZRLF=$@ $< -o $@ $(CPP_DEFINES)
 
-test: zrle zrld
+test: $(OUTPUTS)
 	./test.sh
 
 clean:
-	rm -f zrle zrld
+	rm -f $(OUTPUTS)
 
 .PHONY: all test clean
