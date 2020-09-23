@@ -15,3 +15,6 @@ for n in {0..512}; do
     cmp <(head -c$n /dev/zero; yes | head -c$n) \
        <((head -c$n /dev/zero; yes | head -c$n) | ./zrle | ./zrld)
 done
+
+cmp <(./zrle /dev/null) /dev/null
+cmp <(./zrld /dev/null) /dev/null
