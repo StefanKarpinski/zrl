@@ -14,7 +14,13 @@
 #define fputc _putc_nolock
 #endif
 
-int read_byte(const char *path, FILE *file) {
+static int fpeek(FILE *file) {
+    int c = fgetc(file);
+    ungetc(c, file);
+    return c;
+}
+
+static int read_byte(const char *path, FILE *file) {
     int c = fgetc(file);
     if (c == EOF) {
         int err = ferror(file);
@@ -26,9 +32,9 @@ int read_byte(const char *path, FILE *file) {
     return c;
 }
 
-void write_byte(int c) {
+static void write_byte(int c) {
     if (c == EOF) {
-        fprintf(stderr, "Programmer error: write_byte(EOF) called\n");
+        fprintf(stderr, "Internal error: write_byte(EOF) called\n");
         exit(1);
     }
     int r = fputc(c, stdout);
@@ -39,30 +45,36 @@ void write_byte(int c) {
     }
 }
 
-uint64_t read_leb128(const char *path, FILE *file) {
+static uint64_t read_leb128(const char *path, FILE *file) {
     uint64_t n = 0;
-    for (int shift = 0;; shift += 7) {
-        int c = read_byte(path, file);
+    for (int shift = 0; shift < 64; shift += 7) {
+        uint64_t c = read_byte(path, file);
         if (c == EOF) {
             fprintf(stderr, "Premature end of file '%s'", path);
             exit(1);
         }
-        n |= (c & 0x7f) << shift;
-        if (!(c & 0x80)) return n;
+        int more = (c & 0x80) != 0;
+        c &= 0x7f;
+        if (c << shift >> shift != c) break;
+        n |= c << shift;
+        if (!more) return n;
     }
+    fprintf(stderr, "Too large LEB128 value in file '%s'", path);
+    exit(1);
 }
 
-void write_leb128(uint64_t n) {
+static void write_leb128(uint64_t n) {
     while (1) {
-        uint8_t c = n & 0x7f;
-        uint8_t more = (n >>= 7) != 0;
-        c |= more << 7;
-        write_byte(c);
+        uint8_t b = 0x7f & n;
+        n >>= 7;
+        uint8_t more = n != 0;
+        b |= more << 7;
+        write_byte(b);
         if (!more) return;
     }
 }
 
-void encode(const char *path, FILE *file) {
+static void zrl_encode(const char *path, FILE *file) {
     while (1) {
         int c = read_byte(path, file);
     top:
@@ -80,7 +92,7 @@ void encode(const char *path, FILE *file) {
     }
 }
 
-void decode(const char *path, FILE *file) {
+static void zrl_decode(const char *path, FILE *file) {
     while (1) {
         int c = read_byte(path, file);
         if (c == EOF) return;
@@ -92,14 +104,42 @@ void decode(const char *path, FILE *file) {
     }
 }
 
-#define zrle 'E'
-#define zrld 'D'
+static void leb128_encode(const char *path, FILE *file) {
+    while (fpeek(file) != EOF) {
+        uint64_t n = 0;
+        for (int shift = 0; shift < 64; shift += 8) {
+            uint64_t c = read_byte(path, file);
+            if (c == EOF) break;
+            n |= c << shift;
+        }
+        write_leb128(n);
+    }
+}
 
-void zrlf(const char *path, FILE *file) {
+static void leb128_decode(const char *path, FILE *file) {
+    while (fpeek(file) != EOF) {
+        uint64_t n = read_leb128(path, file);
+        for (int i = 0; i < 8; i++) {
+            write_byte(n & 0xff);
+            n >>= 8;
+        }
+    }
+}
+
+#define zrle 1
+#define zrld 2
+#define leb128e 3
+#define leb128d 4
+
+static void zrlf(const char *path, FILE *file) {
 #if ZRLF == zrle
-    encode(path, file);
+    zrl_encode(path, file);
 #elif ZRLF == zrld
-    decode(path, file);
+    zrl_decode(path, file);
+#elif ZRLF == leb128e
+    leb128_encode(path, file);
+#elif ZRLF == leb128d
+    leb128_decode(path, file);
 #else
 #error "ZRLF C preprocessor variable must be 'zlre' or 'zrld'"
 #endif
