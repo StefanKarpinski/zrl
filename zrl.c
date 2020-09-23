@@ -14,7 +14,7 @@
 #define fputc _putc_nolock
 #endif
 
-int read_byte(const char *path, FILE *file) {
+static int read_byte(const char *path, FILE *file) {
     int c = fgetc(file);
     if (c == EOF) {
         int err = ferror(file);
@@ -26,7 +26,7 @@ int read_byte(const char *path, FILE *file) {
     return c;
 }
 
-void write_byte(int c) {
+static void write_byte(int c) {
     if (c == EOF) {
         fprintf(stderr, "Internal error: write_byte(EOF) called\n");
         exit(1);
@@ -39,7 +39,7 @@ void write_byte(int c) {
     }
 }
 
-uint64_t read_leb128(const char *path, FILE *file) {
+static uint64_t read_leb128(const char *path, FILE *file) {
     uint64_t n = 0;
     for (int shift = 0;; shift += 7) {
         int c = read_byte(path, file);
@@ -52,7 +52,7 @@ uint64_t read_leb128(const char *path, FILE *file) {
     }
 }
 
-void write_leb128(uint64_t n) {
+static void write_leb128(uint64_t n) {
     while (1) {
         uint8_t c = n & 0x7f;
         uint8_t more = (n >>= 7) != 0;
@@ -62,7 +62,7 @@ void write_leb128(uint64_t n) {
     }
 }
 
-void encode(const char *path, FILE *file) {
+static void encode(const char *path, FILE *file) {
     while (1) {
         int c = read_byte(path, file);
     top:
@@ -80,7 +80,7 @@ void encode(const char *path, FILE *file) {
     }
 }
 
-void decode(const char *path, FILE *file) {
+static void decode(const char *path, FILE *file) {
     while (1) {
         int c = read_byte(path, file);
         if (c == EOF) return;
@@ -95,7 +95,7 @@ void decode(const char *path, FILE *file) {
 #define zrle 'E'
 #define zrld 'D'
 
-void zrlf(const char *path, FILE *file) {
+static void zrlf(const char *path, FILE *file) {
 #if ZRLF == zrle
     encode(path, file);
 #elif ZRLF == zrld
