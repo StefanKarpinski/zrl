@@ -1,4 +1,7 @@
 CFLAGS ?= -std=c99 -O3
+# assume UNIX by default:
+CPP_DEFINES ?= -DIO_UNLOCKED
+# set to -DIO_NOLOCK to avoid locking on Windows
 
 all: zrle zrld
 
