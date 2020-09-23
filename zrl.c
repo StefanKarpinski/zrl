@@ -28,7 +28,7 @@ int read_byte(const char *path, FILE *file) {
 
 void write_byte(int c) {
     if (c == EOF) {
-        fprintf(stderr, "Programmer error: write_byte(EOF) called\n");
+        fprintf(stderr, "Internal error: write_byte(EOF) called\n");
         exit(1);
     }
     int r = fputc(c, stdout);
